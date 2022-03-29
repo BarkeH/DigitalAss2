@@ -1,0 +1,235 @@
+//This is main menu form
+
+
+
+mainMenuForm
+{
+    
+
+    string[][4] teachingList //list of teaching level files 
+    string teachingFile
+    string teachingAudioFile
+
+    List of strings challengeFiles
+    int currentChallenge = 0
+    function mainMenuForm load()
+    {
+
+    }
+
+    function btnStart click(){
+        btnStart.hide
+        foreach element in teachingList{
+            Create button with text element[0]
+            add button to form
+            connect button press to btnLevelSelect function
+        }
+    }
+
+    function btnLevelSelect(btnclicked){
+        string[3] chosen
+        foreach element in teaching list{
+            if element[0] == btnclicked.text {
+                chosen = element
+                break
+            }
+        }
+        teachingFile = chosen[1]
+        teachingAudioFile = chosen[2]
+        Streamreader load chosen[3] {
+            string line = ""
+
+            while line = Streamreader.line() != null{
+                challengeFiles.add(line)
+            } 
+
+        }
+
+        create form with TeachingForm
+        set form settings
+        show TeachingForm
+        hide this form
+
+    }
+
+}
+
+//this is Teaching form
+//takes a csv file with text and displays it to the screen
+// 
+
+
+
+TeachingForm
+{
+  
+    string[] textList
+    int currentLine = 0
+
+    function TeachingForm_load()
+    {
+        Streamreader load mainMenuForm.teachingFile {
+            string line = ""
+
+            while line = Streamreader.line() != null{
+                textList.add(line)
+            } 
+
+        }
+        
+        lblCurrentLine.text = textList[currentLine]
+        currentLine ++
+
+        SoundPlayer teachingAudio = load sound from mainMenuForm.teachingAudioFile
+    }
+
+    function btnAudio_click(){
+        teachingAudio.play()
+    }
+
+    function btnNxt_click(){
+        
+        lblCurrentLine.text = textList[currentLine]
+        currentLine ++
+        if currentLine == textList.length {
+            create form challengeForm
+            apply challengeForm settings
+            show challenge form
+            hide this form
+        }
+    }
+}
+
+//this is challenge form
+
+challengeForm {
+    int tileWidth
+
+    list of list of strings currentLevel
+    integer[2] wizardPosition = {0,0}
+
+    integer challengeWidth
+    integer challengeHeight
+
+    int wizardDirection = 0
+
+    string[] codeBlocks
+
+    function challengeForm_load(){
+        
+        setUpChallenge()
+    }
+    function setUpChallenge{
+        loadLevel()    
+        setUpBoard()
+    }
+
+    function loadLevel(currentChallenge){
+        if currentChallenge == mainMenuForm.challengeFiles.length
+        Streamreader read from file mainMenuForm.challengeFiles[mainMenu.currentChallenge]{
+            string line = Streamreader read line
+            while line != null{
+                currentLevel.add(split line arround ,)
+                line = Streamreader read line
+            }
+        }
+        challengeHeight = currentLevel.length
+        challengeWidth = currentLevel[0].length
+
+        foreach i in codeBlocks {
+            create codeBlock in codeBlockBar
+        }
+    }
+
+    function setUpBoard{
+        int x = 0
+        int y = 0
+        foreach i in currentLevel{
+            foreach j in i{
+                
+                if j == "s"{
+                    put spike image with coordinates (x*tileWidth,y*tileWidth) and width/height of tileWidth
+                } else if j == "p"{
+                    put path image with coordinates (x*tileWidth,y*tileWidth) and width/height of tileWidth
+                } else if j == "v"{
+                    put void image with coordinates (x*tileWidth,y*tileWidth) and width/height of tileWidth
+                } else if j == "a"{
+                    put start image with coordinates (x*tileWidth,y*tileWidth) and width/height of tileWidth
+                    wizardPosition = {x,y}
+                    put wizardCharacterImage at coordinates (x*tileWidth,y*tileWidth)
+                }else if j == "e"{
+                    put end image with coordinates (x*tileWidth,y*tileWidth) and width/height of tileWidth
+                }
+                x++
+            }
+            
+            y++
+        }
+        
+    }
+    function btnStart_click{
+        convertCodeBlocks to list of strings called codeList
+
+        foreach i in codeList{
+            if i[0] == "moveBlock"{
+                moveBlock()
+            }else if i[0] == "turnBlock"{
+                turnBlock(i[1][0],i[1][1])
+            }
+        }
+
+    }
+
+
+
+    function validatePosition(posX,posY){
+        
+        if currentLevel[posY][posX] in ["v","s"] or posX < 0 or posY < 0 or posX >= challengeWidth or posY > challengeHeight{
+            return false
+        }
+        return true
+    }
+
+    // these are the functions for the different code blocks, there will be more in the final version this is a proof of concept
+    function moveBlock(){
+        int[2] newPos = wizardPosition
+         if wizardDirection == 0{
+            newPos[0] -= 1
+        }else if wizardDirection == 1{
+            newPos[1] -= 1
+        }else if wizardDirection == 2{
+            newPos[0] += 1
+        }else if wizardDirection == 3{
+            newPos[1] += 1
+        }
+        if validatePosition(newPos) == true{
+            wizardPosition = newPos
+            move wizardCharacterImage to coordinates (newPos[0]*tileWidth,newPos[1]*tileWidth)
+        }
+
+        if currentLevel[newPos[1]][newPos[0]] == "e"{
+            mainMenuForm.currentChallenge ++
+            reset this form
+        }
+    }
+
+    function turnBlock(direction){
+        //direction -1 is turn left, direction 1 is turn right this will be an option on the code block
+        wizardDirection += direction
+        if wizardDirection == -1 {
+            wizardDirection = 3
+        }else if wizardDirection == 4{
+            wizardDirection = 0
+        }
+
+        if wizardDirection == 0{
+            wizardCharacterImage = wizardImageFacingLeft
+        }else if wizardDirection == 1{
+            wizardCharacterImage = wizardImageFacingUp
+        }else if wizardDirection == 2{
+            wizardCharacterImage = wizardImageFacingRight
+        }else if wizardDirection == 3{
+            wizardCharacterImage = wizardImageFacingDown
+        }
+    }
+}
